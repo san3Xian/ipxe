@@ -1,0 +1,5 @@
+isos:
+  - name: demo
+    kernel: http://example.com/vmlinuz
+    initrd: http://example.com/initrd.img
+    cmdline: console=ttyS0
