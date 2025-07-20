@@ -7,18 +7,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Server wraps an HTTP file server and optional iPXE handler.
 type Server struct {
 	addr        string
 	root        string
 	ipxeHandler http.Handler
 }
 
+// New creates a new HTTP server bound to addr serving files from root.
 func New(addr, root string, ipxe http.Handler) *Server {
 	return &Server{addr: addr, root: root, ipxeHandler: ipxe}
 }
 
+// Addr returns the configured listen address.
 func (s *Server) Addr() string { return s.addr }
 
+// Serve starts the HTTP server and blocks.
 func (s *Server) Serve() error {
 	mux := http.NewServeMux()
 	if s.ipxeHandler != nil {

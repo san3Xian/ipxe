@@ -9,11 +9,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Lease represents a leased IP address and its expiry time.
 type Lease struct {
 	IP     net.IP
 	Expiry time.Time
 }
 
+// DHCPServer provides a minimal DHCP server implementation.
 type DHCPServer struct {
 	iface         string
 	ipRangeStart  net.IP
@@ -24,6 +26,7 @@ type DHCPServer struct {
 	leases        map[string]Lease
 }
 
+// NewDHCPServer creates a DHCPServer using the provided network settings.
 func NewDHCPServer(iface string, start, end, router, dns net.IP, leaseDur time.Duration) *DHCPServer {
 	return &DHCPServer{
 		iface:         iface,
@@ -36,6 +39,7 @@ func NewDHCPServer(iface string, start, end, router, dns net.IP, leaseDur time.D
 	}
 }
 
+// availableIP returns the first free IP within the configured range.
 func (d *DHCPServer) availableIP() net.IP {
 	for ip := d.ipRangeStart.To4(); !ip.Equal(d.ipRangeEnd); incIP(ip) {
 		used := false
@@ -52,6 +56,7 @@ func (d *DHCPServer) availableIP() net.IP {
 	return nil
 }
 
+// incIP increments an IPv4 address in place.
 func incIP(ip net.IP) {
 	for j := len(ip) - 1; j >= 0; j-- {
 		ip[j]++
@@ -61,6 +66,7 @@ func incIP(ip net.IP) {
 	}
 }
 
+// ServeDHCP implements dhcp.Handler.
 func (d *DHCPServer) ServeDHCP(pkt dhcp.Packet, msgType dhcp.MessageType, options dhcp.Options) dhcp.Packet {
 	mac := pkt.CHAddr().String()
 	switch msgType {
@@ -93,6 +99,7 @@ func (d *DHCPServer) ServeDHCP(pkt dhcp.Packet, msgType dhcp.MessageType, option
 	return nil
 }
 
+// options returns static DHCP options used for replies.
 func (d *DHCPServer) options() []dhcp.Option {
 	return []dhcp.Option{
 		{Code: dhcp.OptionSubnetMask, Value: net.IP(net.CIDRMask(24, 32))},
@@ -100,6 +107,8 @@ func (d *DHCPServer) options() []dhcp.Option {
 		{Code: dhcp.OptionDomainNameServer, Value: []byte(d.dns)},
 	}
 }
+
+// Serve starts listening and processing DHCP packets.
 func (d *DHCPServer) Serve() error {
 	c, err := conn.NewUDP4BoundListener(d.iface, ":67")
 	if err != nil {
@@ -109,6 +118,7 @@ func (d *DHCPServer) Serve() error {
 	return dhcp.Serve(c, d)
 }
 
+// Leases returns a copy of currently active leases.
 func (d *DHCPServer) Leases() map[string]Lease {
 	out := make(map[string]Lease)
 	for k, v := range d.leases {
