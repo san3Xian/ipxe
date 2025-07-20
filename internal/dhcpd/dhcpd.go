@@ -5,7 +5,6 @@ import (
 	"time"
 
 	dhcp "github.com/krolaw/dhcp4"
-	"github.com/krolaw/dhcp4/conn"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -110,7 +109,15 @@ func (d *DHCPServer) options() []dhcp.Option {
 
 // Serve starts listening and processing DHCP packets.
 func (d *DHCPServer) Serve() error {
-	c, err := conn.NewUDP4BoundListener(d.iface, ":67")
+	var (
+		c   net.PacketConn
+		err error
+	)
+	if d.iface != "" {
+		c, err = udpListener(d.iface, ":67")
+	} else {
+		c, err = net.ListenPacket("udp4", ":67")
+	}
 	if err != nil {
 		return err
 	}
